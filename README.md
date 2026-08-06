@@ -131,12 +131,54 @@ locally (`docker build -t rag . && docker run -p 8080:8080 rag`) and in the clou
   for the benchmark harness (next milestone).
 - **Cloud-ready** — containerised, `$PORT`-aware, one-command Cloud Run deploy.
 
+## Evaluation
+
+`evaluate.py` measures properties of the *system* rather than answers to one
+specific document, so the metrics stay meaningful after you swap in your own
+corpus:
+
+- **Retrieval self-test** — samples indexed chunks, queries with a fragment of
+  each, and checks whether that chunk comes back (reports hit@k and MRR across
+  several `top_k` values, plus retrieval latency). Runs on local embeddings
+  only: no API cost, fully reproducible on any corpus.
+- **Faithfulness / abstention** — asks questions whose answers are *not* in the
+  corpus and checks that the system declines instead of fabricating, which tests
+  the grounding prompt independently of document content.
+
+```bash
+python evaluate.py                    # retrieval self-test + faithfulness
+python evaluate.py --no-faithfulness  # retrieval only (no chat-model calls)
+```
+
+### Sample results
+
+Retrieval self-test on a 19-chunk corpus (bge-m3 local embeddings):
+
+| top_k | hit@k | MRR   | latency p50 | latency p95 |
+|-------|-------|-------|-------------|-------------|
+| 3     | 1.00  | 0.965 | ~357 ms     | ~399 ms     |
+| 5     | 1.00  | 0.965 | ~352 ms     | ~376 ms     |
+| 10    | 1.00  | 0.965 | ~363 ms     | ~386 ms     |
+
+The correct chunk is retrieved every time, and MRR ~0.97 means it is almost
+always ranked first. Recall and MRR are **flat across `top_k`**, so raising
+`top_k` only adds context length (and cost, on paid models) without improving
+retrieval — hence `top_k=4` as the default. Retrieval latency is stable and
+independent of `top_k`, so end-to-end latency is dominated by generation, not
+search. These numbers are content-agnostic and reproduce on any indexed corpus.
+
+`tests/` holds fast, no-network unit tests (`pytest`) for chunking, duplicate
+detection, and config precedence. `tests/golden_qa.json` is a document-specific
+regression fixture for manual runs — kept separate from the content-agnostic
+evaluation above.
+
 ## Roadmap
 
-- [ ] Benchmark / eval harness: golden Q&A set, A/B across chunk sizes, `top_k`,
-      embedding + chat models; report recall@k, latency, and cost.
+- [x] Content-agnostic evaluation: retrieval self-test (hit@k, MRR) and
+      faithfulness/abstention.
 - [ ] Reranker and hybrid (keyword + vector) retrieval.
-- [ ] Streaming responses and a minimal web UI.
+- [ ] Retrieval-latency-vs-corpus-size scaling curve.
+- [ ] Streaming responses.
 - [ ] OCR for scanned PDFs.
 
 ## License

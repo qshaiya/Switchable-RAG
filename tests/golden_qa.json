@@ -1,0 +1,40 @@
+{
+  "description": "Golden Q&A set derived from sample_data/sample_policy.txt. 'answer_contains' checks the generated answer; 'context_contains' checks whether retrieval surfaced the right passage.",
+  "items": [
+    {
+      "question": "How many remote days are allowed per week?",
+      "answer_contains": ["3"],
+      "context_contains": ["3 days per week"]
+    },
+    {
+      "question": "What are the core hours remote employees must be available?",
+      "answer_contains": ["10:00", "16:00"],
+      "context_contains": ["10:00 and 16:00"]
+    },
+    {
+      "question": "How much is the monthly internet stipend?",
+      "answer_contains": ["5,000"],
+      "context_contains": ["5,000 JPY"]
+    },
+    {
+      "question": "How long is the probation period before an employee can work remotely?",
+      "answer_contains": ["3-month", "3 month", "three month"],
+      "context_contains": ["3-month probation"]
+    },
+    {
+      "question": "How far in advance must remote days be requested?",
+      "answer_contains": ["24 hours", "24-hour", "24"],
+      "context_contains": ["24 hours in advance"]
+    },
+    {
+      "question": "Can company documents be stored on personal cloud accounts?",
+      "answer_contains": ["no", "never", "not"],
+      "context_contains": ["never be stored on personal cloud"]
+    },
+    {
+      "question": "Who approves a remote work request?",
+      "answer_contains": ["manager"],
+      "context_contains": ["direct manager"]
+    }
+  ]
+}

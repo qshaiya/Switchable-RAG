@@ -65,3 +65,8 @@ class VectorStore:
 
     def count(self) -> int:
         return self._collection.count()
+ 
+    def all_chunks(self) -> list[tuple[str, str]]:
+        """Return every (id, text) pair in the collection."""
+        got = self._collection.get(include=["documents"])
+        return list(zip(got.get("ids", []), got.get("documents", [])))
