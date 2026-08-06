@@ -1,0 +1,22 @@
+ACME Corp Remote Work Policy (Sample)
+
+1. Eligibility
+Full-time employees who have completed their 3-month probation period are
+eligible to work remotely up to 3 days per week.
+
+2. Core Hours
+All remote employees must be available between 10:00 and 16:00 JST for meetings
+and collaboration, regardless of their location.
+
+3. Equipment
+The company provides a laptop and a monthly stipend of 5,000 JPY toward home
+internet costs. Employees are responsible for maintaining a secure network.
+
+4. Data Security
+Company documents must never be stored on personal cloud accounts. All work must
+remain within approved systems. Confidential documents may not leave the
+corporate network.
+
+5. Requesting Remote Days
+Remote days must be requested through the HR portal at least 24 hours in advance
+and approved by the employee's direct manager.

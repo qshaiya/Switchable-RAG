@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Assistant</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --ink: #1f2430;
+      --muted: #6b7280;
+      --accent: #2f6df6;
+      --accent-ink: #ffffff;
+      --border: #e5e7eb;
+      --err-bg: #fdecec;
+      --err-ink: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN",
+        "Yu Gothic", Meiryo, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+    .topbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+    .lang { display: inline-flex; border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: var(--card); }
+    .lang button {
+      border: none; background: transparent; color: var(--muted); font: inherit;
+      padding: 5px 12px; cursor: pointer; font-size: .82rem;
+    }
+    .lang button.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.92rem; }
+    .ask {
+      display: flex; gap: 10px; align-items: stretch;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    textarea {
+      flex: 1; border: none; resize: vertical; min-height: 46px; max-height: 200px;
+      font: inherit; padding: 8px 10px; outline: none; background: transparent; color: inherit;
+    }
+    button.go {
+      border: none; background: var(--accent); color: var(--accent-ink);
+      font: inherit; font-weight: 600; padding: 0 20px; border-radius: 9px;
+      cursor: pointer; white-space: nowrap;
+    }
+    button.go:disabled { opacity: .55; cursor: default; }
+    .hint { font-size: .8rem; color: var(--muted); margin: 10px 2px 0; }
+    .answer {
+      margin-top: 26px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px; white-space: pre-wrap;
+    }
+    .answer h2, .sources h3 { font-size: .78rem; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+    .sources { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .src { font-size: .86rem; color: var(--muted); margin-bottom: 6px; }
+    .src b { color: var(--ink); font-weight: 600; }
+    .meta { margin-top: 14px; font-size: .76rem; color: var(--muted); }
+    .error {
+      margin-top: 26px; background: var(--err-bg); color: var(--err-ink);
+      border: 1px solid #f3c0bd; border-radius: 12px; padding: 16px 18px; font-size: .9rem;
+    }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.5);
+      border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: -2px; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="lang">
+        <button id="btn-en" class="active" onclick="setLang('en')">English</button>
+        <button id="btn-ja" onclick="setLang('ja')">日本語</button>
+      </div>
+    </div>
+
+    <h1 id="t-title">Document Assistant</h1>
+    <p class="sub" id="t-sub"></p>
+
+    <div class="ask">
+      <textarea id="q"></textarea>
+      <button class="go" id="go" onclick="ask()"></button>
+    </div>
+    <p class="hint" id="t-hint"></p>
+
+    <div id="error" class="error hidden"></div>
+
+    <div id="result" class="answer hidden">
+      <h2 id="t-answer">Answer</h2>
+      <div id="answer"></div>
+      <div id="sources" class="sources hidden">
+        <h3 id="t-sources">Sources</h3>
+        <div id="sourceList"></div>
+      </div>
+      <div id="meta" class="meta"></div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const I18N = {
+      en: {
+        title: "Document Assistant",
+        sub: "Ask a question about your documents. Answers are based only on the files that have been added.",
+        placeholder: "e.g. How many remote days are allowed per week?",
+        ask: "Ask",
+        thinking: "Thinking",
+        hint: "Tip: press Ctrl+Enter to submit. First answers can take a while on free models.",
+        answer: "Answer",
+        sources: "Sources",
+        noAnswer: "(no answer returned)",
+        empty: "Please enter a question.",
+        failed: (s) => "Request failed (status " + s + ").",
+        meta: (m, r, g) => "Model: " + m + " \u00b7 retrieval " + r + " ms \u00b7 generation " + g + " ms",
+      },
+      ja: {
+        title: "\u30c9\u30ad\u30e5\u30e1\u30f3\u30c8\u30a2\u30b7\u30b9\u30bf\u30f3\u30c8",
+        sub: "\u53d6\u308a\u8fbc\u3093\u3060\u8cc7\u6599\u306b\u3064\u3044\u3066\u306e\u8cea\u554f\u306b\u304a\u7b54\u3048\u3057\u307e\u3059\u3002\u56de\u7b54\u306f\u8ffd\u52a0\u3055\u308c\u305f\u30d5\u30a1\u30a4\u30eb\u306e\u5185\u5bb9\u306e\u307f\u306b\u57fa\u3065\u304d\u307e\u3059\u3002",
+        placeholder: "\u4f8b\uff1a\u9031\u306b\u4f55\u65e5\u307e\u3067\u30ea\u30e2\u30fc\u30c8\u30ef\u30fc\u30af\u304c\u8a8d\u3081\u3089\u308c\u3066\u3044\u307e\u3059\u304b\uff1f",
+        ask: "\u8cea\u554f\u3059\u308b",
+        thinking: "\u51e6\u7406\u4e2d",
+        hint: "\u30d2\u30f3\u30c8\uff1aCtrl+Enter \u3067\u9001\u4fe1\u3067\u304d\u307e\u3059\u3002\u7121\u6599\u30e2\u30c7\u30eb\u3067\u306f\u6700\u521d\u306e\u56de\u7b54\u306b\u6642\u9593\u304c\u304b\u304b\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002",
+        answer: "\u56de\u7b54",
+        sources: "\u53c2\u7167\u5143",
+        noAnswer: "\uff08\u56de\u7b54\u304c\u3042\u308a\u307e\u305b\u3093\u3067\u3057\u305f\uff09",
+        empty: "\u8cea\u554f\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+        failed: (s) => "\u30ea\u30af\u30a8\u30b9\u30c8\u306b\u5931\u6557\u3057\u307e\u3057\u305f\uff08\u30b9\u30c6\u30fc\u30bf\u30b9 " + s + "\uff09\u3002",
+        meta: (m, r, g) => "\u30e2\u30c7\u30eb\uff1a" + m + " \u00b7 \u691c\u7d22 " + r + " ms \u00b7 \u751f\u6210 " + g + " ms",
+      },
+    };
+
+    let lang = "en";
+    let lastMeta = null;
+
+    function setLang(l) {
+      lang = l;
+      const t = I18N[l];
+      document.documentElement.lang = l;
+      $("btn-en").classList.toggle("active", l === "en");
+      $("btn-ja").classList.toggle("active", l === "ja");
+      $("t-title").textContent = t.title;
+      $("t-sub").textContent = t.sub;
+      $("q").placeholder = t.placeholder;
+      $("go").textContent = t.ask;
+      $("t-hint").textContent = t.hint;
+      $("t-answer").textContent = t.answer;
+      $("t-sources").textContent = t.sources;
+      if (lastMeta) $("meta").textContent = t.meta(lastMeta.model, lastMeta.r, lastMeta.g);
+    }
+
+    async function ask() {
+      const t = I18N[lang];
+      const question = $("q").value.trim();
+      if (!question) {
+        $("error").textContent = t.empty;
+        $("error").classList.remove("hidden");
+        return;
+      }
+
+      $("error").classList.add("hidden");
+      $("result").classList.add("hidden");
+      $("go").disabled = true;
+      $("go").innerHTML = '<span class="spinner"></span>' + t.thinking;
+
+      try {
+        const res = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        if (!res.ok) {
+          let detail = t.failed(res.status);
+          try {
+            const body = await res.json();
+            if (body.detail) detail = body.detail;
+          } catch (_) {}
+          throw new Error(detail);
+        }
+
+        const data = await res.json();
+        $("answer").textContent = data.answer || t.noAnswer;
+
+        const list = $("sourceList");
+        list.innerHTML = "";
+        if (data.sources && data.sources.length) {
+          data.sources.forEach((s) => {
+            const div = document.createElement("div");
+            div.className = "src";
+            const page = s.page != null ? " (p." + s.page + ")" : "";
+            div.innerHTML = "<b>" + escapeHtml(s.source) + "</b>" + page;
+            list.appendChild(div);
+          });
+          $("sources").classList.remove("hidden");
+        } else {
+          $("sources").classList.add("hidden");
+        }
+
+        lastMeta = {
+          model: data.model || "?",
+          r: Math.round(data.retrieval_ms),
+          g: Math.round(data.generation_ms),
+        };
+        $("meta").textContent = I18N[lang].meta(lastMeta.model, lastMeta.r, lastMeta.g);
+        $("result").classList.remove("hidden");
+      } catch (err) {
+        $("error").textContent = err.message || String(err);
+        $("error").classList.remove("hidden");
+      } finally {
+        $("go").disabled = false;
+        $("go").textContent = I18N[lang].ask;
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    $("q").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask();
+    });
+
+    setLang((navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en");
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+llm:
+  provider: openai
+  chat_model: openai/gpt-oss-20b:free
+  temperature: 0
+  context_limit: 6000
+
+embedding:
+  provider: ollama
+  model: bge-m3
+
+retrieval:
+  chunk_size: 700
+  chunk_overlap: 100
+  top_k: 4
+
+paths:
+  data: data
+  vector_store: storage/chroma_db
+
+documents:
+  supported_extensions:
+    - .pdf
+    - .txt
+    - .md
