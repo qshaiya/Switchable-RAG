@@ -5,8 +5,8 @@ llm:
   context_limit: 6000
 
 embedding:
-  provider: ollama
-  model: bge-m3
+  provider: gemini
+  model: gemini-embedding-001
 
 retrieval:
   chunk_size: 700

@@ -161,10 +161,99 @@ class OllamaEmbedding:
 
 
 # --------------------------------------------------------------------------- #
+# Jina (hosted embeddings, free tier — used for cloud deploy where there's no GPU)
+# --------------------------------------------------------------------------- #
+class JinaEmbedding:
+    name = "jina"
+
+    def __init__(self, cfg: Config):
+        if not cfg.jina_api_key:
+            raise ProviderError(
+                "EMBEDDING_PROVIDER=jina but JINA_API_KEY is not set. "
+                "Get a free key at https://jina.ai/embeddings and add it to .env."
+            )
+        self._key = cfg.jina_api_key
+        self.model = cfg.embedding_model
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        import requests  # lazy
+
+        r = requests.post(
+            "https://api.jina.ai/v1/embeddings",
+            headers={
+                "Authorization": f"Bearer {self._key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self.model,
+                "input": texts,
+                # 'task' is required for jina-embeddings-v3+. retrieval.passage
+                # encodes text for retrieval indexing; it also works acceptably
+                # for the query side in this simple setup.
+                "task": "retrieval.passage",
+            },
+            timeout=60,
+        )
+        r.raise_for_status()
+        data = r.json()["data"]
+        # Preserve input order.
+        return [item["embedding"] for item in sorted(data, key=lambda d: d["index"])]
+
+
+# --------------------------------------------------------------------------- #
+# Google Gemini (hosted embeddings via AI Studio — free tier, API key only)
+# --------------------------------------------------------------------------- #
+class GeminiEmbedding:
+    name = "gemini"
+    _URL = ("https://generativelanguage.googleapis.com/v1beta/"
+            "models/{model}:batchEmbedContents")
+
+    def __init__(self, cfg: Config):
+        if not cfg.gemini_api_key:
+            raise ProviderError(
+                "EMBEDDING_PROVIDER=gemini but GEMINI_API_KEY is not set. "
+                "Get a free key at https://aistudio.google.com/apikey and add it to .env."
+            )
+        self._key = cfg.gemini_api_key
+        self.model = cfg.embedding_model  # e.g. gemini-embedding-001
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        import requests  # lazy
+
+        url = self._URL.format(model=self.model)
+        out: list[list[float]] = []
+        # The batch endpoint caps requests per call; page in chunks of 100.
+        for start in range(0, len(texts), 100):
+            batch = texts[start:start + 100]
+            body = {
+                "requests": [
+                    {"model": f"models/{self.model}",
+                     "content": {"parts": [{"text": t}]}}
+                    for t in batch
+                ]
+            }
+            r = requests.post(
+                url,
+                headers={"x-goog-api-key": self._key,
+                         "Content-Type": "application/json"},
+                json=body,
+                timeout=60,
+            )
+            r.raise_for_status()
+            out.extend(e["values"] for e in r.json()["embeddings"])
+        return out
+
+
+# --------------------------------------------------------------------------- #
 # Factories
 # --------------------------------------------------------------------------- #
 _CHAT = {"openai": OpenAIChat, "anthropic": AnthropicChat, "ollama": OllamaChat}
-_EMBED = {"openai": OpenAIEmbedding, "ollama": OllamaEmbedding}
+_EMBED = {
+    "openai": OpenAIEmbedding,
+    "ollama": OllamaEmbedding,
+    "jina": JinaEmbedding,
+    "gemini": GeminiEmbedding,
+}
 
 
 def get_chat_provider(cfg: Config) -> ChatProvider:

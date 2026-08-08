@@ -13,7 +13,7 @@ from .config import Config
 from .document_loader import iter_documents, load_file
 from .providers import get_chat_provider, get_embedding_provider
 from .text_splitter import split_documents
-from .vector_store import VectorStore
+from .vector_store import get_vector_store
 
 # A deliberately grounding prompt: the model must answer from context or admit
 # it doesn't know, which curbs hallucination.
@@ -25,8 +25,8 @@ SYSTEM_PROMPT = (
 )
 
 
-def _store(cfg: Config) -> VectorStore:
-    return VectorStore(cfg.vector_store_dir)
+def _store(cfg: Config):
+    return get_vector_store(cfg)
 
 
 def ingest(cfg: Config) -> dict:

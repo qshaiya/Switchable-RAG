@@ -9,3 +9,4 @@ requests>=2.31
 # Provider SDKs — only needed for the hosted mode you actually use:
 openai>=1.30
 anthropic>=0.25
+qdrant-client>=1.9

@@ -44,7 +44,13 @@ class Config:
     openai_api_key: Optional[str] = None
     openai_base_url: Optional[str] = None   # e.g. https://openrouter.ai/api/v1
     anthropic_api_key: Optional[str] = None
+    jina_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
     ollama_base_url: str = "http://localhost:11434"
+    # vector store: "chroma" (local, default) or "qdrant" (hosted)
+    vector_store: str = "chroma"
+    qdrant_url: Optional[str] = None
+    qdrant_api_key: Optional[str] = None
 
 
 def _load_yaml(path: Path) -> dict:
@@ -82,6 +88,11 @@ def load_config(yaml_path: Optional[Path] = None) -> Config:
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_base_url=os.getenv("OPENAI_BASE_URL"),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+        jina_api_key=os.getenv("JINA_API_KEY"),
+        gemini_api_key=os.getenv("GEMINI_API_KEY"),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        vector_store=os.getenv("VECTOR_STORE", raw.get("vector_store", {}).get("provider", "chroma")),
+        qdrant_url=os.getenv("QDRANT_URL"),
+        qdrant_api_key=os.getenv("QDRANT_API_KEY"),
     )
     return cfg
