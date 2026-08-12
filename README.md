@@ -1,19 +1,18 @@
 # Local RAG Assistant
 
-**🔗 Live demo:** https://switchable-rag-951521021036.asia-northeast1.run.app
+Ask questions about **your own documents** and get answers grounded in them, with
+the source file shown for each answer. The same codebase runs two ways:
 
-The live demo runs a **fully-hosted** configuration on Google Cloud Run (Gemini embeddings, Qdrant Cloud, OpenRouter chat — no GPU). The same codebase also runs **fully local** (Ollama embeddings + local LLM + Chroma), switchable by config.
+- **Local mode** — everything runs on your own machine ([Ollama](https://ollama.com)
+  for the model, Chroma for storage). No API keys, and no document ever leaves
+  your computer. Good for private or work-internal files.
+- **Hosted mode** — the model and vector store run as cloud services (Gemini or
+  OpenRouter for the model, Qdrant Cloud for storage). No GPU needed, and it can
+  be deployed to the cloud (e.g. Google Cloud Run).
 
-Ask questions over **your own documents** and get answers grounded in them, with
-source citations. Runs two ways from the same codebase:
-
-- **Hosted mode** — bring an OpenAI or Anthropic API key. No GPU needed; anyone
-  can clone and run it.
-- **Local mode** — run entirely on your machine with [Ollama](https://ollama.com).
-  No API key, no data leaves your computer. Built for privacy-sensitive and
-  enterprise-internal documents.
-
-Switching between the two is **one config value**, not two code paths.
+Switching between the two is a **config change, not a code change** — you edit a
+few provider settings and re-index; no application code is touched. See
+[Switching modes](#switching-modes) below.
 
 ---
 
@@ -59,6 +58,42 @@ ollama pull llama3.1
 In `config.yaml` set both providers to `ollama` (chat model `llama3.1`,
 embedding model `bge-m3`), then run the same `ingest` / `uvicorn` commands. No
 key required; nothing leaves your machine.
+
+---
+
+## Switching modes
+
+Three settings in `.env` decide where things run. Change them, re-index, done —
+no code changes.
+
+| Setting | Local (private, on your GPU) | Hosted (cloud services) |
+|---|---|---|
+| `LLM_PROVIDER` | `ollama` | `openai` (OpenRouter) |
+| `EMBEDDING_PROVIDER` | `ollama` | `gemini` |
+| `VECTOR_STORE` | `chroma` | `qdrant` |
+| API keys needed | none | OpenRouter + Gemini + Qdrant |
+
+**To switch to local:** set the three values to `ollama` / `ollama` / `chroma`,
+set `config.yaml` models to `llama3.1` and `bge-m3`, pull them
+(`ollama pull llama3.1 && ollama pull bge-m3`), then rebuild the index:
+
+```bash
+rm -rf storage/          # clear the old index
+python ingest.py
+```
+
+**To switch to hosted:** set the three values to `openai` / `gemini` / `qdrant`,
+fill the matching keys in `.env`, set `config.yaml` models accordingly, then
+re-index (`python ingest.py`).
+
+**Why re-index?** Local and hosted use different embedding models (bge-m3 is
+1024-dimensional, Gemini is 3072), and their vectors aren't interchangeable — so
+switching the embedding provider means rebuilding the index. Check the current
+mode any time:
+
+```bash
+python -c "from app.config import load_config; c=load_config(); print('chat:',c.chat_provider,'| embed:',c.embedding_provider,'| store:',c.vector_store)"
+```
 
 ---
 
