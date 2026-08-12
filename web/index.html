@@ -91,8 +91,6 @@
       <textarea id="q"></textarea>
       <button class="go" id="go" onclick="ask()"></button>
     </div>
-    <p class="hint" id="t-hint"></p>
-
     <div id="error" class="error hidden"></div>
 
     <div id="result" class="answer hidden">
@@ -116,7 +114,6 @@
         placeholder: "e.g. How many remote days are allowed per week?",
         ask: "Ask",
         thinking: "Thinking",
-        hint: "Tip: press Ctrl+Enter to submit. First answers can take a while on free models.",
         answer: "Answer",
         sources: "Sources",
         noAnswer: "(no answer returned)",
@@ -130,7 +127,6 @@
         placeholder: "\u4f8b\uff1a\u9031\u306b\u4f55\u65e5\u307e\u3067\u30ea\u30e2\u30fc\u30c8\u30ef\u30fc\u30af\u304c\u8a8d\u3081\u3089\u308c\u3066\u3044\u307e\u3059\u304b\uff1f",
         ask: "\u8cea\u554f\u3059\u308b",
         thinking: "\u51e6\u7406\u4e2d",
-        hint: "\u30d2\u30f3\u30c8\uff1aCtrl+Enter \u3067\u9001\u4fe1\u3067\u304d\u307e\u3059\u3002\u7121\u6599\u30e2\u30c7\u30eb\u3067\u306f\u6700\u521d\u306e\u56de\u7b54\u306b\u6642\u9593\u304c\u304b\u304b\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002",
         answer: "\u56de\u7b54",
         sources: "\u53c2\u7167\u5143",
         noAnswer: "\uff08\u56de\u7b54\u304c\u3042\u308a\u307e\u305b\u3093\u3067\u3057\u305f\uff09",
@@ -153,7 +149,6 @@
       $("t-sub").textContent = t.sub;
       $("q").placeholder = t.placeholder;
       $("go").textContent = t.ask;
-      $("t-hint").textContent = t.hint;
       $("t-answer").textContent = t.answer;
       $("t-sources").textContent = t.sources;
       if (lastMeta) $("meta").textContent = t.meta(lastMeta.model, lastMeta.r, lastMeta.g);
