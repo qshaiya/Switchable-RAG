@@ -36,6 +36,7 @@ class Config:
     chunk_size: int = 700
     chunk_overlap: int = 100
     top_k: int = 4
+    score_threshold: float = 0.5   # min cosine similarity to count a chunk as relevant
     # paths
     data_dir: Path = field(default_factory=lambda: _ROOT / "data")
     vector_store_dir: Path = field(default_factory=lambda: _ROOT / "storage" / "chroma_db")
@@ -80,6 +81,7 @@ def load_config(yaml_path: Optional[Path] = None) -> Config:
         chunk_size=int(ret.get("chunk_size", 700)),
         chunk_overlap=int(ret.get("chunk_overlap", 100)),
         top_k=int(ret.get("top_k", 4)),
+        score_threshold=float(ret.get("score_threshold", 0.5)),
         data_dir=_ROOT / paths.get("data", "data"),
         vector_store_dir=_ROOT / paths.get("vector_store", "storage/chroma_db"),
         supported_extensions=tuple(

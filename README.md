@@ -1,5 +1,9 @@
 # Local RAG Assistant
 
+**🔗 Live demo:** https://switchable-rag-951521021036.asia-northeast1.run.app
+
+The live demo runs a **fully-hosted** configuration on Google Cloud Run (Gemini embeddings, Qdrant Cloud, OpenRouter chat — no GPU). The same codebase also runs **fully local** (Ollama embeddings + local LLM + Chroma), switchable by config.
+
 Ask questions over **your own documents** and get answers grounded in them, with
 source citations. Runs two ways from the same codebase:
 

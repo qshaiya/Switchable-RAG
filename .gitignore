@@ -19,3 +19,4 @@ venv/
 .idea/
 .vscode/
 benchmark_results.csv
+env.yaml

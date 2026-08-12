@@ -72,11 +72,25 @@ def answer(cfg: Config, question: str, top_k: Optional[int] = None) -> dict:
     hits = store.query(q_vec, k)
     retrieval_ms = (time.perf_counter() - t0) * 1000
 
+    # Keep only chunks similar enough to the question. This drops weakly-related
+    # chunks the retriever always returns to fill top_k, so the answer and the
+    # cited sources reflect what's actually relevant — not everything fetched.
+    relevant = [h for h in hits if h["score"] >= cfg.score_threshold]
+
+    # De-duplicate sources by file + page so the same passage isn't listed twice.
+    seen = set()
+    sources = []
+    for h in relevant:
+        key = (h["source"], h["page"])
+        if key not in seen:
+            seen.add(key)
+            sources.append(h)
+
     context = "\n\n".join(
         f"[{h['source']}"
         + (f" p.{h['page']}" if h["page"] is not None else "")
         + f"]\n{h['snippet']}"
-        for h in hits
+        for h in relevant
     )[: cfg.context_limit]
     user_msg = f"Context:\n{context}\n\nQuestion: {question}"
 
@@ -86,7 +100,7 @@ def answer(cfg: Config, question: str, top_k: Optional[int] = None) -> dict:
 
     return {
         "answer": text,
-        "sources": hits,
+        "sources": sources,
         "model": chat.model,
         "retrieval_ms": round(retrieval_ms, 1),
         "generation_ms": round(generation_ms, 1),
