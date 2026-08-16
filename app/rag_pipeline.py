@@ -98,10 +98,17 @@ def answer(cfg: Config, question: str, top_k: Optional[int] = None) -> dict:
     text = chat.generate(SYSTEM_PROMPT, user_msg, cfg.temperature)
     generation_ms = (time.perf_counter() - t1) * 1000
 
-    return {
+    result = {
         "answer": text,
         "sources": sources,
         "model": chat.model,
         "retrieval_ms": round(retrieval_ms, 1),
         "generation_ms": round(generation_ms, 1),
     }
+    # Optional, fault-tolerant chat-history logging (no-op if unconfigured).
+    try:
+        from .history_store import log_query
+        log_query(cfg, question, result)
+    except Exception:
+        pass
+    return result

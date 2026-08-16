@@ -52,6 +52,9 @@ class Config:
     vector_store: str = "chroma"
     qdrant_url: Optional[str] = None
     qdrant_api_key: Optional[str] = None
+    # optional chat-history logging (MongoDB); unset = feature disabled
+    mongodb_uri: Optional[str] = None
+    mongodb_db: str = "rag_assistant"
 
 
 def _load_yaml(path: Path) -> dict:
@@ -96,5 +99,7 @@ def load_config(yaml_path: Optional[Path] = None) -> Config:
         vector_store=os.getenv("VECTOR_STORE", raw.get("vector_store", {}).get("provider", "chroma")),
         qdrant_url=os.getenv("QDRANT_URL"),
         qdrant_api_key=os.getenv("QDRANT_API_KEY"),
+        mongodb_uri=os.getenv("MONGODB_URI"),
+        mongodb_db=os.getenv("MONGODB_DB", "rag_assistant"),
     )
     return cfg

@@ -73,6 +73,13 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .hidden { display: none; }
+    .history { margin-top: 26px; }
+    .history h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); margin: 0 0 10px; }
+    .hitem { background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+    .hq { font-size: .9rem; font-weight: 600; }
+    .ha { font-size: .84rem; color: var(--muted); margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -102,6 +109,11 @@
       </div>
       <div id="meta" class="meta"></div>
     </div>
+
+    <div id="historyBox" class="history hidden">
+      <h3 id="t-history">Recent questions</h3>
+      <div id="historyList"></div>
+    </div>
   </div>
 
   <script>
@@ -116,6 +128,7 @@
         thinking: "Thinking",
         answer: "Answer",
         sources: "Sources",
+        history: "Recent questions",
         noAnswer: "(no answer returned)",
         empty: "Please enter a question.",
         failed: (s) => "Request failed (status " + s + ").",
@@ -129,6 +142,7 @@
         thinking: "\u51e6\u7406\u4e2d",
         answer: "\u56de\u7b54",
         sources: "\u53c2\u7167\u5143",
+        history: "\u6700\u8fd1\u306e\u8cea\u554f",
         noAnswer: "\uff08\u56de\u7b54\u304c\u3042\u308a\u307e\u305b\u3093\u3067\u3057\u305f\uff09",
         empty: "\u8cea\u554f\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
         failed: (s) => "\u30ea\u30af\u30a8\u30b9\u30c8\u306b\u5931\u6557\u3057\u307e\u3057\u305f\uff08\u30b9\u30c6\u30fc\u30bf\u30b9 " + s + "\uff09\u3002",
@@ -151,6 +165,7 @@
       $("go").textContent = t.ask;
       $("t-answer").textContent = t.answer;
       $("t-sources").textContent = t.sources;
+      $("t-history").textContent = t.history;
       if (lastMeta) $("meta").textContent = t.meta(lastMeta.model, lastMeta.r, lastMeta.g);
     }
 
@@ -209,6 +224,7 @@
         };
         $("meta").textContent = I18N[lang].meta(lastMeta.model, lastMeta.r, lastMeta.g);
         $("result").classList.remove("hidden");
+        loadHistory();
       } catch (err) {
         $("error").textContent = err.message || String(err);
         $("error").classList.remove("hidden");
@@ -227,7 +243,34 @@
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask();
     });
 
+    async function loadHistory() {
+      try {
+        const res = await fetch("/history?limit=5");
+        if (!res.ok) return;
+        const items = await res.json();
+        const box = $("historyBox");
+        const list = $("historyList");
+        if (!items.length) { box.classList.add("hidden"); return; }
+        list.innerHTML = "";
+        items.forEach((it) => {
+          const div = document.createElement("div");
+          div.className = "hitem";
+          const q = document.createElement("div");
+          q.className = "hq";
+          q.textContent = it.question || "";
+          const a = document.createElement("div");
+          a.className = "ha";
+          a.textContent = it.answer || "";
+          div.appendChild(q);
+          div.appendChild(a);
+          list.appendChild(div);
+        });
+        box.classList.remove("hidden");
+      } catch (_) { /* history is optional; ignore */ }
+    }
+
     setLang((navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en");
+    loadHistory();
   </script>
 </body>
 </html>

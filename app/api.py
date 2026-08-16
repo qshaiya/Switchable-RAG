@@ -72,6 +72,14 @@ def health() -> HealthResponse:
     )
 
 
+@app.get("/history")
+def history(limit: int = 20) -> list[dict]:
+    """Recent questions and answers (empty if history logging isn't configured)."""
+    from .history_store import recent
+    cfg = load_config()
+    return recent(cfg, min(max(limit, 1), 100))
+
+
 @app.get("/stats", response_model=StatsResponse)
 def stats() -> StatsResponse:
     cfg = load_config()
